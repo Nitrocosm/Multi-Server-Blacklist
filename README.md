@@ -73,9 +73,9 @@ Our database is very simple, and the information stored is the following: (We ha
       }
     ]
 
-#What still needs to be added.
+# What still needs to be added.
 
-  -Add ban messages when logging and running checkbans()
-  -Pages to embeds
-  -Total stats
-  -Help Page for commands.
+    - [ ] Add ban messages when logging and running checkbans()
+    - [ ] Pages to embeds
+    - [ ] Total stats
+    - [ ] Help Page for commands
