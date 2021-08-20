@@ -7,15 +7,17 @@ from discord.ext import tasks
 
 foundids = []
 foundbans = []
-userpass = {"username": "POLARIS", "password": "sl3uCMjIO1qvq0rKu2DfKm0CGKhY7g2B0IoDUREz"}
-servers = {'773971022268727296': 'Olympus', '806987487174983702': 'Polaris'}
-baseurl = "http://194.163.159.235:40001/"
-getallid = ['508463722000416768', '193811513012649984', '218469149331030017']
-intents = discord.Intents.default()
-intents.members = True
-client = commands.Bot(command_prefix=">>", intents=intents)
-guild = discord.Guild
-authorizedRoles = ['Manager', 'Not Special', 'Staff', 'Ranked Mod']
+userpass = {"username": "user", "password": "password"} # These go in the headers of requests.
+servers = {'serverID #1': 'Server Name #1', 'serverID #2': 'Server Name #2'} # A dictionary with all the servers that participate in the multi-server blacklist and their ID
+baseurl = "The URL without methods attached to the URL" # The server itself, like so: "https://127.0.0.1/". Add the slash at the end.
+intents = discord.Intents.default() # This allows the bot to actually use calls that require downloading a member list possible.
+intents.members = True # This took me 4 hours to find out about. Remember to always enable Intents.
+client = commands.Bot(command_prefix=">>", intents=intents) # I actually don't know what this does, other than make stuff work, set intents, and set the prefix.
+guild = discord.Guild # This also does something, however, I have been too scared to remove it, even if it looks like it does nothing since ctx exists.
+bannableOffenses = ["racism", "software"] # These are bannable offenses. They come handy in checkbans() and autobanning().
+authorizedRoles = ['Manager', 'Not Special', 'Staff', 'Ranked Mod'] # These are the roles authorised to use the bot at all.
+
+# There's still things I want to do to make this better, so I'll still be updating this as much as I can.
 
 @client.event
 async def on_ready():
@@ -23,7 +25,7 @@ async def on_ready():
 
 # Player Specific Commands.
 @client.command()
-async def getall(ctx):
+async def getall(ctx): # This gets all of the player in the database. When I have time, I'll add in pages for the embed, as there's a 2000 char limit to them.
     authorize = rolecheck(ctx)
     if authorize:
         playername = []
@@ -36,13 +38,13 @@ async def getall(ctx):
             banid = temp["type"]
             playername.append("<@" + playerid + ">")
             bantype.append(banid)
-        embed = discord.Embed(title="All Players In Database", url="https://www.edeashop.xyz",
-                              description="Look at all these shitters! Haha, they got banned from all 3 servers, KEK.",
+        embed = discord.Embed(title="All Players In Database",
+                              description="Description Field for your Embed",
                               color=0xFF5733)
-        embed.set_author(name="Soul's Automator",
-                         icon_url="https://cdn.discordapp.com/avatars/709863869920837652/f25e9a614be70e82b5b9b6085244c50d.png?size=256")
+        embed.set_author(name="Bot Name",
+                         icon_url="Bot Icon")
         embed.set_thumbnail(
-            url="https://static.wikia.nocookie.net/pixel-gun-3d/images/9/9b/Banhammerbig.png/revision/latest?cb=20200728091619")
+            url="Picture in the top-right corner")
         embed.add_field(name="Player Name", value='\n'.join(playername), inline=True)
         embed.add_field(name="Ban Type", value='\n'.join(bantype), inline=True)
         embed.set_footer(text="Information requested by: {}".format(ctx.author.display_name))
@@ -51,7 +53,7 @@ async def getall(ctx):
         ctx.send('You are not authorized to use that command.')
 
 @client.command()
-async def getplayer(ctx, *, userID):
+async def getplayer(ctx, *, userID): # This gets a specific player from the database by ID, and creates an embed with the relevant information.
     authorize = rolecheck(ctx)
     if authorize:
         response = requests.get(baseurl + "get_player", headers=userpass, data=json.dumps({
@@ -67,10 +69,10 @@ async def getplayer(ctx, *, userID):
             embed = discord.Embed(title='Lookup for ' + playerID,
                                   description="Specific lookup of a single user.",
                                   color=0xFF5733)
-            embed.set_author(name="Soul's Automator",
-                             icon_url="https://cdn.discordapp.com/avatars/709863869920837652/f25e9a614be70e82b5b9b6085244c50d.png?size=256")
+            embed.set_author(name="Bot Name",
+                             icon_url="Bot Icon")
             embed.set_thumbnail(
-                url="https://static.wikia.nocookie.net/pixel-gun-3d/images/9/9b/Banhammerbig.png/revision/latest?cb=20200728091619")
+                url="Picture in the top-right corner")
             embed.add_field(name="Player Name(if any)", value="<@{}>".format(playerID), inline=True)
             embed.add_field(name="Mod Name(if any)", value="<@{}>".format(issueID), inline=True)
             embed.add_field(name="Mod ID", value=issueID, inline=True)
@@ -83,7 +85,7 @@ async def getplayer(ctx, *, userID):
         await ctx.send("You are not authorized to use this bot.")
 
 @client.command()
-async def setplayer(ctx, userID, type, *, reason):
+async def setplayer(ctx, userID, type, *, reason): # This makes a new entry in the database. There are 4 types of bans in our database, racism, software, rulebreak, and toxicity.
     authorize = rolecheck(ctx)
     if authorize:
         url = baseurl + "set_player"
@@ -106,14 +108,13 @@ async def setplayer(ctx, userID, type, *, reason):
         await ctx.send("You are not authorized to use this bot.")
 
 @client.command()
-async def racism(ctx, userID, *, reason):
+async def racism(ctx, userID, *, reason):  # This is a racism-specific command. It is just setplayer() but the bantype is just determined by the command itself.
     authorize = rolecheck(ctx)
     if authorize:
         url = baseurl + "set_player"
         player_id = str(userID)
         server_id = str(ctx.guild.id)
         assigner_id = str(ctx.author.id)
-        reason = reason
         content = {
             'player_id': player_id,
             'server_id': server_id,
@@ -128,14 +129,13 @@ async def racism(ctx, userID, *, reason):
         await ctx.send("You are not authorized to use this bot.")
 
 @client.command()
-async def software(ctx, userID, *, reason):
+async def software(ctx, userID, *, reason):  # This is a software-specific command. It is just setplayer() but the bantype is just determined by the command itself.
     authorize = rolecheck(ctx)
     if authorize:
         url = baseurl + "set_player"
         player_id = str(userID)
         server_id = str(ctx.guild.id)
         assigner_id = str(ctx.author.id)
-        reason = reason
         content = {
             'player_id': player_id,
             'server_id': server_id,
@@ -150,14 +150,13 @@ async def software(ctx, userID, *, reason):
         await ctx.send("You are not authorized to use this bot.")
 
 @client.command()
-async def toxicity(ctx, userID, *, reason):
+async def toxicity(ctx, userID, *, reason):  # This is a toxicity-specific command. It is just setplayer() but the bantype is just determined by the command itself.
     authorize = rolecheck(ctx)
     if authorize:
         url = baseurl + "set_player"
         player_id = str(userID)
         server_id = str(ctx.guild.id)
         assigner_id = str(ctx.author.id)
-        reason = reason
         content = {
             'player_id': player_id,
             'server_id': server_id,
@@ -172,14 +171,13 @@ async def toxicity(ctx, userID, *, reason):
         await ctx.send("You are not authorized to use this bot.")
 
 @client.command()
-async def rulebreak(ctx, userID, *, reason):
+async def rulebreak(ctx, userID, *, reason): # This is a rulebreak-specific command. It is just setplayer() but the bantype is just determined by the command itself.
     authorize = rolecheck(ctx)
     if authorize:
         url = baseurl + "set_player"
         player_id = str(userID)
         server_id = str(ctx.guild.id)
         assigner_id = str(ctx.author.id)
-        reason = reason
         content = {
             'player_id': player_id,
             'server_id': server_id,
@@ -194,7 +192,7 @@ async def rulebreak(ctx, userID, *, reason):
         await ctx.send("You are not authorized to use this bot.")
 
 @client.command()
-async def deleteplayer(ctx, *, userID):
+async def deleteplayer(ctx, *, userID): # Self explanatory, this deletes a player from the database.
     authorize = rolecheck(ctx)
     if authorize:
         response = requests.delete(url=baseurl + "delete_player", headers=userpass, data=json.dumps({
@@ -205,7 +203,7 @@ async def deleteplayer(ctx, *, userID):
         await ctx.send("You are not authorized to use this bot.")
 
 @client.command()
-async def deleteplayers(ctx, *, userIDs):
+async def deleteplayers(ctx, *, userIDs): # Self explanatory, this deletes multiple players delimited by a comma.
     deletion = []
     authorize = rolecheck(ctx)
     if authorize:
@@ -220,6 +218,8 @@ async def deleteplayers(ctx, *, userIDs):
         response = requests.delete(url=baseurl + "delete_players", headers=userpass, data=data)
         print(response.text)
         await ctx.send(response.text)
+    else:
+        await ctx.send("You are not authorized to use this bot.")
 
 @client.command()
 async def checkbans(ctx):
@@ -231,7 +231,7 @@ async def checkbans(ctx):
         foundbans = []
         foundnames = []
         members = ctx.guild.members
-        role = get(ctx.guild.roles, id=806987487254937660)
+        role = get(ctx.guild.roles, id=806987487254937660) # Gets Ranked Player role
         for member in members: # Gets all players with Ranked Player role.
             if role in member.roles:
                 idchecklist.append(member.id)
@@ -244,55 +244,58 @@ async def checkbans(ctx):
         data = json.dumps(fullplayerlist) # Turns it suitable to send to API.
         response = requests.get(url, headers=userpass, data=data) # Request for data
         responsedict = json.loads(response.text) # Turns the response into a dictionary. This contains data on any unbanned player with Ranked Player role.
-        if len(responsedict) == 0:
+        if len(responsedict) == 0: #If there are no matches, this means all players that are on the database either are banned or aren't in the server
             await ctx.send("No Players Found! Is comp clean????")
             return responsedict
         else:
-            for x in range(len(responsedict)): # Makes an embed with the information
+            for x in range(len(responsedict)): # Appends information recieved to according lists. There's other ways of doing this, but I couldn't be asked, as it just works.
                 temp = responsedict[x]
                 playerid = temp["player_id"]
                 bantype = temp["type"]
-                foundids.append(playerid)
-                foundbans.append(bantype)
+                foundids.append(playerid) # Will be used for banning/suspending players later
+                foundbans.append(bantype) # Will be used to check whether to ban the player or suspend them. The list here corresponds with the positions in foundids.
                 foundnames.append("<@" + playerid + ">")
             embed = discord.Embed(title="**Matches Found!**",
                                   description="** **",
                                   color=0xFF5733)
-            embed.set_author(name="Soul's Automator",
-                             icon_url="https://cdn.discordapp.com/avatars/709863869920837652/f25e9a614be70e82b5b9b6085244c50d.png?size=256")
+            embed.set_author(name="Bot Name",
+                             icon_url="Bot Icon")
             embed.set_thumbnail(
-                url="https://static.wikia.nocookie.net/pixel-gun-3d/images/9/9b/Banhammerbig.png/revision/latest?cb=20200728091619")
+                url="Picture for top-right")
             embed.add_field(name="Player ID", value='\n'.join(foundids), inline=True)
             embed.add_field(name="Player ID", value='\n'.join(foundnames), inline=True)
             embed.add_field(name="Ban Type", value='\n'.join(foundbans), inline=True)
             embed.set_footer(text="Information requested by: {}".format(ctx.author.display_name))
             await ctx.send(embed=embed)
-            #Banning section of the code. It takes all matches from the database, checks for ranked suspended players, and adds unsuspended players to byebye?????????
+            #Banning section of the code. It takes all matches from the database, checks for ranked suspended players, and adds unsuspended players to byebye.
             byebye = []
-            susrole = get(ctx.guild.roles, id=806987487254937669)
+            susrole = get(ctx.guild.roles, id=806987487254937669) # Gets "Ranked | Suspended" role.
             for idx in range(len(foundids)):
-                susmember = ctx.guild.get_member(int(foundids[idx]))
+                susmember = ctx.guild.get_member(int(foundids[idx])) # Creates Member object using ID. get_user only gets User object, which is a parent obj independent of any guild.
                 if susrole not in susmember.roles:
-                    byebye.append([foundids[idx], foundbans[idx]])
-            for x in range(len(byebye)): # THE FUN STUFF
+                    byebye.append([foundids[idx], foundbans[idx]]) # Appends any unpunished player.
+            for x in range(len(byebye)): # This is where members go byebye and are either suspended from ranked play or banned from the server
                 tribunal = ctx.guild.get_member(int(byebye[x][0]))
-                if byebye[x][1] == 'racism' or byebye[x][1] == 'software':
+                if byebye[x][1] in bannableOffenses: # This is the ban section, for bannable offenses
                     deathsentence = await tribunal.create_dm()
-                    if byebye[x][1] == 'software':
-                        await deathsentence.send("You have been banned from Polaris+ for using external software on other ranked servers.\nTHIS IS AN AUTOMATED BAN BY THE AU CIA, DM xSoul#1962 IF YOU BELIEVE THIS TO BE FALSE.\nTHIS DOES NOT MEAN A SECOND CHANCE, YOUR BAN WAS NOT ACCIDENTAL IF YOU HAVE BEEN BANNED FOR EXTERNAL SOFTWARE BEFORE.")
+                    if byebye[x][1] == 'Bantype1':
+                        await deathsentence.send("Banned for bantype 1")
                     else:
-                        await deathsentence.send("You have been banned from Polaris+ for racism on other ranked servers.\nTHIS IS AN AUTOMATED BAN BY THE AU CIA, DM xSoul#1962 IF YOU BELIEVE THIS TO BE FALSE.\nTHIS DOES NOT MEAN A SECOND CHANCE, YOUR BAN WAS NOT ACCIDENTAL IF YOU HAVE BEEN BANNED FOR RACISM BEFORE.")
-                    await tribunal.ban()
-                else:
+                        await deathsentence.send("Banned for bantype 2")
+                    await tribunal.ban(reason=byebye[x][1])
+                else: # This is the suspension section, for lesser but still punishable offenses
                     deathsentence = await tribunal.create_dm()
                     if byebye[x][1] == 'rulebreak':
                         await deathsentence.send(
-                            "You have been banned from Polaris+ for severe rulebreaks on other ranked servers.\nTHIS IS AN AUTOMATED BAN BY THE AU CIA, DM xSoul#1962 IF YOU BELIEVE THIS TO BE FALSE.\nTHIS DOES NOT MEAN A SECOND CHANCE, YOUR BAN WAS NOT ACCIDENTAL IF YOU HAVE BEEN SUSPENDED FOR REFUSING SS OR BREAKING MULTIPLE RULES.")
+                            "Suspended for bantype 3")
                     else:
                         await deathsentence.send(
-                            "You have been suspended from Polaris+ ranked play for severe toxicity on other ranked servers.\nTHIS IS AN AUTOMATED BAN BY THE AU CIA, DM xSoul#1962 IF YOU BELIEVE THIS TO BE FALSE.\nTHIS DOES NOT MEAN A SECOND CHANCE, YOUR BAN WAS NOT ACCIDENTAL IF YOU HAVE BEEN SUSPENDED FOR SEVERE TOXICITY.")
+                            "Suspended for bantype 4")
                     await tribunal.add_roles(susrole)
+    else:
+        await ctx.send("You are not authorized to use this bot.")
 
+# This was a testing command for rolecheck(). I keep it here in case I want to modify rolecheck() and want to try something new.
 @client.command()
 async def seerolecheck(ctx):
     member = ctx.author
@@ -307,29 +310,32 @@ async def seerolecheck(ctx):
     else:
         await ctx.send("HA, fucking non, you don't have roles, kek.")
 
-
+# This regular function is the authorization function. This checks whether you have any role from the list of roles in authorized roles and will return true if you do.
 def rolecheck(ctx):
-    member = ctx.author
-    authorize = False
-    for i in range(len(authorizedRoles)):
-        role = discord.utils.get(ctx.guild.roles, name=authorizedRoles[i])
+    member = ctx.author # This creates a Member obj
+    authorize = False 
+    for i in range(len(authorizedRoles)): # This iterates through all the roles in authorizedRoles. There's more efficient ways of doing it, but when I found out 
+        role = discord.utils.get(ctx.guild.roles, name=authorizedRoles[i]) # this was already a core function, and I'm too scared to fuck with it right now.
         if role in member.roles:
             authorize = True
             break
     return authorize
 
-
+# This is an automated version of checkbans(), and is here because I'm forgetful and can't remember to do one thing every 8 hours.
+# What's special is that you have to pass context yourself, as tasks.loop can't pass context.
+# Why is guild set to one ID? I've only used it for one server, so the need hasn't risen yet. However, if I make this public, this gets fixed by adding all servers the bot
+# is in to a dictionary, and if it gets bigger than 10 servers, into a database.
 @tasks.loop(seconds=120)
 async def autobanning():
-    guild = client.get_guild(806987487174983702)
-    channel = client.get_channel(878040462194253824)
+    guild = client.get_guild("GuildID")
+    channel = client.get_channel("This channel is meant to log this task.")
     idchecklist = []
     fullplayerlist = []
     foundids = []
     foundbans = []
     foundnames = []
     members = guild.members
-    role = get(guild.roles, id=806987487254937660)
+    role = get(guild.roles, id=806987487254937660) # Gets Ranked Player role
     for member in members:  # Gets all players with Ranked Player role.
         if role in member.roles:
             idchecklist.append(member.id)
@@ -343,63 +349,65 @@ async def autobanning():
     response = requests.get(url, headers=userpass, data=data)  # Request for data
     responsedict = json.loads(
         response.text)  # Turns the response into a dictionary. This contains data on any unbanned player with Ranked Player role.
-    if len(responsedict) == 0:
+    if len(responsedict) == 0: # If there are no matches, this means all players that are on the database either are banned or aren't in the server.
         await channel.send("No Players Found! Is comp clean????")
         return responsedict
     else:
-        for x in range(len(responsedict)):  # Makes an embed with the information
+        for x in range(len(responsedict)):  # Appends information recieved to according lists. There's other ways of doing this, but I couldn't be asked, as it just works.
             temp = responsedict[x]
             playerid = temp["player_id"]
             bantype = temp["type"]
-            foundids.append(playerid)
-            foundbans.append(bantype)
+            foundids.append(playerid) # Will be used for banning/suspending players later
+            foundbans.append(bantype) # Will be used to check whether to ban the player or suspend them. The list here corresponds with the positions in foundids.
             foundnames.append("<@" + playerid + ">")
         embed = discord.Embed(title="**Matches Found!**",
                               description="** **",
                               color=0xFF5733)
-        embed.set_author(name="Soul's Automator",
-                         icon_url="https://cdn.discordapp.com/avatars/709863869920837652/f25e9a614be70e82b5b9b6085244c50d.png?size=256")
+        embed.set_author(name="Bot Name",
+                         icon_url="Bot Icon")
         embed.set_thumbnail(
-            url="https://static.wikia.nocookie.net/pixel-gun-3d/images/9/9b/Banhammerbig.png/revision/latest?cb=20200728091619")
+            url="Picture for top-right")
         embed.add_field(name="Player ID", value='\n'.join(foundids), inline=True)
         embed.add_field(name="Player ID", value='\n'.join(foundnames), inline=True)
         embed.add_field(name="Ban Type", value='\n'.join(foundbans), inline=True)
         embed.set_footer(text="Automated Ban Check.")
         await channel.send(embed=embed)
-        # Banning section of the code. It takes all matches from the database, checks for ranked suspended players, and adds unsuspended players to byebye?????????
+        # Banning section of the code. It takes all matches from the database, checks for ranked suspended players, and adds unsuspended players to byebye.
         byebye = []
-        susrole = get(guild.roles, id=806987487254937669)
+        susrole = get(guild.roles, id=806987487254937669)  # Gets "Ranked | Suspended" role
         for idx in range(len(foundids)):
-            susmember = guild.get_member(int(foundids[idx]))
+            susmember = guild.get_member(int(foundids[idx])) # Creates Member object using ID. get_user only gets User object, which is a parent obj independent of any guild.
             if susrole not in susmember.roles:
-                byebye.append([foundids[idx], foundbans[idx]])
-        for x in range(len(byebye)):  # THE FUN STUFF
+                byebye.append([foundids[idx], foundbans[idx]]) # Appends any unpunished player.
+        for x in range(len(byebye)):  # This is where members go byebye and are either suspended from ranked play or banned from the server.
             tribunal = guild.get_member(int(byebye[x][0]))
-            if byebye[x][1] == 'racism' or byebye[x][1] == 'software':
+            if byebye[x][1] in bannableOffenses: # This is the ban section, for bannable offenses
                 deathsentence = await tribunal.create_dm()
-                if byebye[x][1] == 'software':
-                    reason = "software | AUCIA"
+                if byebye[x][1] == 'Punishment Type #1':
+                    reason = "Punishment Type #1"
                     await deathsentence.send(
-                        "You have been banned from Polaris+ for using external software on other ranked servers.\nTHIS IS AN AUTOMATED BAN BY THE AU CIA, DM xSoul#1962 IF YOU BELIEVE THIS TO BE FALSE.\nTHIS DOES NOT MEAN A SECOND CHANCE, YOUR BAN WAS NOT ACCIDENTAL IF YOU HAVE BEEN BANNED FOR EXTERNAL SOFTWARE BEFORE.")
+                        "DM Message based on the punishment")
                 else:
-                    reason = "racism | AUCIA"
+                    reason = "Punishment Type #2"
                     await deathsentence.send(
-                        "You have been banned from Polaris+ for racism on other ranked servers.\nTHIS IS AN AUTOMATED BAN BY THE AU CIA, DM xSoul#1962 IF YOU BELIEVE THIS TO BE FALSE.\nTHIS DOES NOT MEAN A SECOND CHANCE, YOUR BAN WAS NOT ACCIDENTAL IF YOU HAVE BEEN BANNED FOR RACISM BEFORE.")
+                        "DM Message based on the punishment")
                 await tribunal.ban(reason=reason)
-            else:
+            else: # This is the suspension section, for lesser but still punishable offenses
                 deathsentence = await tribunal.create_dm()
-                if byebye[x][1] == 'rulebreak':
+                if byebye[x][1] == 'Punishment Type #3':
                     await deathsentence.send(
-                        "You have been suspended from Polaris+ for severe rulebreaks on other ranked servers.\nTHIS IS AN AUTOMATED BAN BY THE AU CIA, DM xSoul#1962 IF YOU BELIEVE THIS TO BE FALSE.\nTHIS DOES NOT MEAN A SECOND CHANCE, YOUR BAN WAS NOT ACCIDENTAL IF YOU HAVE BEEN SUSPENDED FOR REFUSING SS OR BREAKING MULTIPLE RULES.")
+                        "DM Message based on the punishment")
                 else:
                     await deathsentence.send(
-                        "You have been suspended from Polaris+ ranked play for severe toxicity on other ranked servers.\nTHIS IS AN AUTOMATED BAN BY THE AU CIA, DM xSoul#1962 IF YOU BELIEVE THIS TO BE FALSE.\nTHIS DOES NOT MEAN A SECOND CHANCE, YOUR BAN WAS NOT ACCIDENTAL IF YOU HAVE BEEN SUSPENDED FOR SEVERE TOXICITY.")
+                        "DM Message based on the punishment")
                 await tribunal.add_roles(susrole)
 
+# This stops the bot from running autobanning() until the bot is ready, and therefore stops it from shitting itself
 @autobanning.before_loop
 async def before():
     await client.wait_until_ready()
 
-# Token.
-#autobanning.start()
-client.run('NzA5ODYzODY5OTIwODM3NjUy.XrsGPw.kLO9btLFkvjmP_F7FSfzLdfLMeg')
+
+autobanning.start()
+# Your token can be found in your Developer Dashboard.
+client.run('token')
